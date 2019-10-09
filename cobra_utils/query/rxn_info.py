@@ -157,3 +157,47 @@ def rxn_info_from_model(model, verbose=True):
     if verbose:
         print('Information correctly obtained.')
     return rxn_gene_association
+
+
+def get_objective_function(model):
+    '''
+    This function returns the reaction set as the objective function for FBA.
+
+    Parameters
+    ----------
+    model : cobra.core.Model.Model
+        A cobra model.
+
+    Returns
+    -------
+    reaction : cobra.core.reaction.Reaction
+        A cobra reaction.
+    '''
+    
+    for rxn in model.reactions:
+        if rxn.objective_coefficient:
+            obj_rxn = rxn
+            break
+    return obj_rxn
+
+
+def get_reaction_stoichiometry(reaction):
+    '''
+    This function returns the stoichiometry of a reaction
+
+    Parameters
+    ----------
+    reaction : cobra.core.reaction.Reaction
+        A cobra reaction.
+
+    Returns
+    -------
+    reaction_stoichiometry : dict
+        A dictionary containing the metabolite stoichiometry of the reaction.
+    '''
+
+    reaction_stoichiometry = dict()
+    for met in reaction.metabolites:
+        stoich = reaction.get_coefficient(met.id)
+        reaction_stoichiometry[met.id] = stoich
+    return reaction_stoichiometry
