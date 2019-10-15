@@ -201,36 +201,3 @@ def get_reaction_stoichiometry(reaction):
         stoich = reaction.get_coefficient(met.id)
         reaction_stoichiometry[met.id] = stoich
     return reaction_stoichiometry
-
-def get_metabolites_from_type(metabolite_list,type):
-    '''
-    This function returns a list of metabolites of a certain type.
-
-    Parameters
-    ----------
-    metabolite_list : list of cobra.core.metabolite.Metabolite
-        A list of cobra metabolites.
-
-    type : string
-    	A string specifying the type of metabolites to be retrieved. 
-    	Possible types are: 'aminoacids','lipids','carbohydrates','DNA','RNA'
-
-    Returns
-    -------
-    filtered_metabolite_list : list
-        A list containing the metabolites of a certain type contained in the model.
-    '''
-    filtered_metabolite_list = []
-
-    # Amino acids
-    if type == 'aminoacids':
-    	aminoacid_identifier = '__L_'
-    	exclude = ['hom','sbt','srb','lac']
-    	for met in metabolite_list:
-    		if aminoacid_identifier in met.id \
-    			and len(met.id.split(aminoacid_identifier)[0]) == 3 \
-    			and met.id.split(aminoacid_identifier)[0] not in exclude \
-    			or met.id == 'gly_c':
-    			filtered_metabolite_list.append(met)
-
-    return filtered_metabolite_list
