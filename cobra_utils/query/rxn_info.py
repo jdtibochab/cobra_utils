@@ -3,6 +3,8 @@
 from __future__ import absolute_import
 
 import pandas as pd
+import cobra
+from cobra_utils.query.met_info import classify_metabolites_by_type
 
 
 def rxn_info_from_metabolites(model, metabolites, verbose=True):
@@ -177,7 +179,7 @@ def get_objective_function(model):
     for rxn in model.reactions:
         if rxn.objective_coefficient:
             obj_rxn = rxn
-            break
+            print(rxn.id)
     return obj_rxn
 
 
@@ -201,3 +203,40 @@ def get_reaction_stoichiometry(reaction):
         stoich = reaction.get_coefficient(met.id)
         reaction_stoichiometry[met.id] = stoich
     return reaction_stoichiometry
+
+def biomass_breakdown(model,input_info, input_mode = 'reaction'):
+
+    if input_mode == 'reaction':
+        biomass_rxn = input_info
+        stoich = get_reaction_stoichiometry(biomass_rxn)
+        class_dict = classify_metabolites_by_type(biomass_rxn.metabolites)
+    elif input_mode == 'dict':
+        stoich = input_info
+        metabolites = []
+        for met_id in stoich.keys():
+            met = model.metabolites.get_by_id(met_id)
+            metabolites.append(met)
+        class_dict = classify_metabolites_by_type(metabolites)
+
+    exclude = ['adp','h2o','h','pi','ppi']
+    contributions = dict()
+
+    for met_type in class_dict.keys():
+        contributions[met_type] = 0
+        for met_id in class_dict[met_type]:
+            
+            if met_id.split('_')[0] not in exclude:
+                met = model.metabolites.get_by_id(met_id)
+                formula = cobra.core.formula.Formula(met.formula)
+                met_weight = formula.weight
+                if met_type == 'aminoacids':
+                    met_weight -= 18 ## Taking out water after polymerization
+                if met_id == 'atp_c':
+                    met_stoich = stoich['atp_c'] + stoich['adp_c'] # Non-energy-related atp
+                else:
+                    met_stoich = stoich[met_id]
+                met_mass = met_weight * met_stoich
+                contributions[met_type] += abs(met_mass)/1000
+    contributions
+
+    return contributions

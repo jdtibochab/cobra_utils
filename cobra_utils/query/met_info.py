@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 import pandas as pd
 import numpy as np
+import cobra
 
 def met_info_from_model(model, verbose=True):
     '''
@@ -71,14 +72,14 @@ def get_metabolites_from_type(metabolite_list,type):
                 or met.id == 'gly_c':
                 filtered_metabolite_list.append(met)
 
-    if type == 'lipids':
-        lipid_identifiers = ['triglyc','mgdg','dgdg','tag','dag','mag','ino',\
-                                'pa_','pc_','pe_','_ps_','zymst','ergst']
-        for met in metabolite_list:
-                for lipid_id in lipid_identifiers:
-                    if lipid_id in met.id:
-                        filtered_metabolite_list.append(met)
-                        break
+    # if type == 'lipids':
+    #     lipid_identifiers = ['triglyc','mgdg','dgdg','tag','dag','mag','ino',\
+    #                             'zymst','ergst']
+    #     for met in metabolite_list:
+    #             for lipid_id in lipid_identifiers:
+    #                 if lipid_id in met.id:
+    #                     filtered_metabolite_list.append(met)
+    #                     break
 
     if type == 'DNA':
         DNA_identifiers = ['da.p','dg.p','dt.p','dc.p']
@@ -100,14 +101,23 @@ def get_metabolites_from_type(metabolite_list,type):
                         filtered_metabolite_list.append(met)
                         break
 
-    if type == 'carbohydrates':
-        carb_identifiers = ['glycogen','starch','mannan']
+    if type == 'storage_carbohydrates':
+        carb_identifiers = ['glycogen','.+ose']
         for met in metabolite_list:
                 for carb_id in carb_identifiers:
                     carb_regex = re.compile(carb_id)
-                    if re.match(carb_regex,met.id):
+                    if re.match(carb_regex,met.id) or re.match(carb_regex,met.name):
                         filtered_metabolite_list.append(met)
                         break
+                        
+    if type == 'cell_wall':
+        CW_identifiers = ['mannan','.+glcn','pa_','pc_','pe_','ps_']
+        for met in metabolite_list:
+            for CW_id in CW_identifiers:
+                CW_regex = re.compile(CW_id)
+                if re.match(CW_regex,met.id) or re.match(CW_regex,met.name):
+                    filtered_metabolite_list.append(met)
+                    break
 
     return filtered_metabolite_list
 
@@ -127,7 +137,7 @@ def classify_metabolites_by_type(metabolite_list):
         A dictionary containing the metabolites classified by type.
     '''
 
-    types = ['aminoacids','lipids','carbohydrates','DNA','RNA']
+    types = ['aminoacids','storage_carbohydrates','DNA','RNA','cell_wall']
 
     classification_dict = dict()
     all_mets =[]
@@ -143,3 +153,10 @@ def classify_metabolites_by_type(metabolite_list):
     classification_dict['other'] = list(np.setdiff1d(all_mets,included_mets))
 
     return classification_dict
+
+def get_molecular_weight(model,met):
+    met = model.metabolites.get_by_id(met.id)
+    formula = cobra.core.formula.Formula(met.formula)
+    met_weight = formula.weight
+
+    return met_weight
